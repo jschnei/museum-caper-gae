@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Online Museum Caper! | Game {{gid}}</title>
+    <style type = "text/css">
+      td, tr, img  { padding: 0px; margin: 0px; border: none; }
+      table { border-collapse: collapse; border-spacing: 0; }
+      img{ 
+      display:block;
+      margin:0;
+      }
+    </style>
+  </head>
+  <body>
+  	<div id = 'title'>
+    	<h1>Game {{gid}}</h1>
+  	</div>
+  	<div id = 'status'>
+    <ul>
+      <li>
+        {{ game.num_players() }} people playing.
+      </li>
+    	<li>
+    		Current turn: {{game.turn_num}}
+    	</li>
+      <li>
+        Board dimensions: {{game_data.game_map.width}} by {{game_data.game_map.height}}
+      </li>
+    </ul>
+  	</div>
+    <div id = 'move'>
+      <p> Make a move! </p>
+      <ul>
+        <li> <a href = 'game{{gid}}/move?d=left'> Move left </a> </li>
+        <li> <a href = 'game{{gid}}/move?d=up'> Move up </a> </li>
+        <li> <a href = 'game{{gid}}/move?d=right'> Move right </a> </li>
+        <li> <a href = 'game{{gid}}/move?d=down'> Move down </a> </li>
+      </ul>
+    </div>
+    <div id = 'render_board'>
+      <table cellspacing="0" cellpadding="0" >
+        {%- for y in range(game_data.game_map.height) -%}
+          <tr>
+            {%- for x in range(game_data.game_map.width) -%}
+              <td><img src="../images/{{game_data.cell_images[(x, y)]}}" width="50" height="50" /></td>
+            {%- endfor -%}
+          </tr>
+        {%- endfor -%}
+      </table>
+    </div>
+    <div id = 'pieces'>
+      <p>
+        There are {{ game_data.game_pieces|count }} pieces on the board.
+      </p>
+    </div>
+  </body>
+</html>

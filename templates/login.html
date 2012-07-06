@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Online Museum Caper! | Login</title>
+  </head>
+  <body>
+  	<div id = 'title'>
+    	<h1>Login</h1>
+  	</div>
+  	<div id = 'message'>
+    	<p>
+    		Login here:
+    	</p>
+  	</div>
+    <div id = 'errors' style = "color:red">
+        {% if errors %}
+        <p> There were errors with your login: </p>
+        <ul>
+        {% for error in errors %}
+          <li>{{ error }}</li>
+        {% endfor %}
+        </ul>
+        {% endif %}
+      </div>
+    <div id = 'login_form'>
+      <form method="post">
+        <label>Username</label><input name = "username">
+        <br>
+        <label>Password</label><input type = "password" name = "password">
+        <br>
+        <input type = "submit">
+      </form>
+    </div>
+    <div id = 'signup'>
+      <p>
+        Don't have an account? Sign up <a href = 'login'>here</a>!
+      </p>
+    </div>
+  </body>
+</html>

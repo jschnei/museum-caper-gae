@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Online Museum Caper! | Your Games</title>
+  </head>
+  <body>
+  	<div id = 'title'>
+    	<h1>Your Games</h1>
+  	</div>
+  	<div id = 'message'>
+    	<p>
+    		You are currently playing in the following games:
+    	</p>
+  	</div>
+    <div id = 'games'>
+      <ul>
+      {% for game in games %}
+        <li><a href = 'games/game{{game}}'> Game {{ game }} </a></li>
+      {% endfor %}
+      </ul>
+    </div>
+    <div id = 'creategame'>
+      <p>
+        Start a new game <a href = 'startgame'>here</a>!
+      </p>
+    </div>  
+  </body>
+</html>

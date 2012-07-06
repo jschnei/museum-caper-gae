@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Online Museum Caper! | Registration</title>
+    </head>
+    <body>
+    	<div id = 'title'>
+        	<h1>Registration</h1>
+    	</div>
+    	<div id = 'message'>
+        	<p>
+        		If you don't already have an account, please sign up here:
+        	</p>
+    	</div>
+    	<div id = 'errors' style = "color:red">
+        {% if errors %}
+        <p> There were errors with your registration: </p>
+        <ul>
+    	  {% for error in errors %}
+          <li>{{ error }}</li>
+        {% endfor %}
+        </ul>
+        {% endif %}
+    	</div>
+        <div id = 'register_form'>
+	        <form method="post">
+			    <label>Username</label><input name = "username">
+			    <br>
+			    <label>Password</label><input type = "password" name = "password">
+			    <br>
+			    <label>Verify</label><input type = "password" name = "verify">
+			    <br>
+			    <label>Email</label><input name = "email">
+			    <br>
+			    <input type = "submit">
+			</form>
+		</div>
+    </body>
+</html>
