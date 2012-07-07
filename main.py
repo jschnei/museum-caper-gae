@@ -1,3 +1,4 @@
+
 #!/usr/bin/env python
 
 from google.appengine.ext import db
@@ -7,6 +8,7 @@ import os
 import pickle
 import webapp2
 
+from models import *
 from game_util import Piece, CharacterPiece, PaintingPiece, LockPiece
 
 import auth_util
@@ -17,33 +19,6 @@ jinja_loader = jinja2.FileSystemLoader(os.path.join(os.path.dirname(__file__), '
 jinja_env = jinja2.Environment(autoescape=True,
 	                             loader = jinja_loader)
 
-
-# models
-
-class User(db.Model):
-  name = db.StringProperty(required = True)
-  password = db.StringProperty(required = True)
-  email = db.StringProperty(required = True)
-
-  game_ids = db.ListProperty(int)
-
-  created = db.DateTimeProperty(auto_now_add = True)
-
-class Game(db.Model):
-  user_ids = db.ListProperty(int)
-  
-  game_state = db.StringProperty(default = 'pregame')
-
-  turn_num = db.IntegerProperty(required = True, default = 0)
-  map_file = db.StringProperty(default = 'default_map.map')
-  piece_list = db.ListProperty(str)
-
-  created = db.DateTimeProperty(auto_now_add = True)
-
-  def num_players(self):
-    return len(self.user_ids)
-
-
 # handlers
 
 class MainHandler(webapp2.RequestHandler):
@@ -52,8 +27,7 @@ class MainHandler(webapp2.RequestHandler):
     self.response.out.write(template.render())
 
   def get(self):
-    auth = self.request.cookies.get('auth', '')
-    if auth_util.check_cookie(auth) :
+    if auth_util.auth_into_site(self) :
       # redirect to games
       self.redirect('/games')
     else:
@@ -71,35 +45,43 @@ class LoginHandler(webapp2.RequestHandler):
     self.response.out.write(html)
 
   def get(self):
-    self.render()
+    if auth_util.auth_into_site(self) :
+      # redirect to games
+      self.redirect('/games')
+    else:
+      self.render()
 
   def post(self):
-    username = self.request.get('username')
-    password = self.request.get('password')
-
-    errors = []
-
-    vUser = auth_util.valid_username(username)
-    vPass = auth_util.valid_password(password)
-
-
-    if vUser and vPass:
-        query = db.Query(User)
-        query.filter('name =', username)
-        query.filter('password =', password)
-        rdusers = list(query.run())
-        if rdusers:
-            u = rdusers[0]
-            uid = u.key().id()
-            auth = auth_util.gen_cookie(uid)
-            self.response.headers.add_header('Set-Cookie', 'auth = %s; Path = /' % auth)
-            self.redirect('/')
-        else:
-            errors.append('Invalid Username/Password Combination')
+    if auth_util.auth_into_site(self) :
+      # redirect to games
+      self.redirect('/games')
     else:
-        errors.append('Invalid Username/Password Combination')
+      username = self.request.get('username')
+      password = self.request.get('password')
 
-    self.render(errors)
+      errors = []
+
+      vUser = auth_util.valid_username(username)
+      vPass = auth_util.valid_password(password)
+
+
+      if vUser and vPass:
+          query = db.Query(User)
+          query.filter('name =', username)
+          query.filter('password =', password)
+          rdusers = list(query.run())
+          if rdusers:
+              u = rdusers[0]
+              uid = u.key().id()
+              auth = auth_util.gen_cookie(uid)
+              self.response.headers.add_header('Set-Cookie', 'auth = %s; Path = /' % auth)
+              self.redirect('/')
+          else:
+              errors.append('Invalid Username/Password Combination')
+      else:
+          errors.append('Invalid Username/Password Combination')
+
+      self.render(errors)
 
 
 class RegisterHandler(webapp2.RequestHandler):
@@ -109,41 +91,47 @@ class RegisterHandler(webapp2.RequestHandler):
     self.response.out.write(html)
 
   def get(self):
-    self.render()
+    if auth_util.auth_into_site(self):
+      self.redirect('/games')
+    else:
+      self.render()
 
   def post(self):
-    username = self.request.get('username')
-    password = self.request.get('password')
-    verify = self.request.get('verify')
-    email = self.request.get('email')
+    if auth_util.auth_into_site(self):
+      self.redirect('/games')
+    else:      
+      username = self.request.get('username')
+      password = self.request.get('password')
+      verify = self.request.get('verify')
+      email = self.request.get('email')
 
-    errors = []
-    if not auth_util.valid_username(username):
-      errors.append("That's not a valid username")
-    if not auth_util.valid_password(password):
-      errors.append("That's not a valid password")
-    if not auth_util.valid_verify(verify, password):
-      errors.append("Your passwords do not match")
-    if not auth_util.valid_email(email):
-      errors.append("That's not a valid e-mail")
+      errors = []
+      if not auth_util.valid_username(username):
+        errors.append("That's not a valid username")
+      if not auth_util.valid_password(password):
+        errors.append("That's not a valid password")
+      if not auth_util.valid_verify(verify, password):
+        errors.append("Your passwords do not match")
+      if not auth_util.valid_email(email):
+        errors.append("That's not a valid e-mail")
 
-    
-    # check if username is already taken
-    query = db.Query(User)
-    query.filter('name =', username)
-    if query.get():
-      errors.append("That user name is already taken")
+      
+      # check if username is already taken
+      query = db.Query(User)
+      query.filter('name =', username)
+      if query.get():
+        errors.append("That user name is already taken")
 
 
-    if not errors:
-      u = User(name = username, password = password, email = email)
-      u.put()
-      uid = u.key().id()
-      auth = auth_util.gen_cookie(uid)
-      self.response.headers.add_header('Set-Cookie', 'auth = %s; Path = /' % auth)
-      self.redirect('/')
-    else:
-      self.render(errors)
+      if not errors:
+        u = User(name = username, password = password, email = email)
+        u.put()
+        uid = u.key().id()
+        auth = auth_util.gen_cookie(uid)
+        self.response.headers.add_header('Set-Cookie', 'auth = %s; Path = /' % auth)
+        self.redirect('/')
+      else:
+        self.render(errors)
 
 class LogoutHandler(webapp2.RequestHandler):
   def get(self):
@@ -157,10 +145,8 @@ class ViewGamesHandler(webapp2.RequestHandler):
     self.response.out.write(html)
 
   def get(self):
-    auth = self.request.cookies.get('auth', '')
-    if auth_util.check_cookie(auth):
-      # get users games
-      uid = auth_util.get_uid(auth)
+    uid = auth_util.auth_into_site(self)
+    if uid:
       user = User.get_by_id(uid)
       games = user.game_ids
       self.render(games)
@@ -169,10 +155,8 @@ class ViewGamesHandler(webapp2.RequestHandler):
 
 class CreateGameHandler(webapp2.RequestHandler):
   def get(self):
-    auth = self.request.cookies.get('auth', '')
-    if auth_util.check_cookie(auth) :
-      # get user id + user
-      uid = auth_util.get_uid(auth)
+    uid = auth_util.auth_into_site(self)
+    if uid:
       user = User.get_by_id(uid)
 
       # create a new game
@@ -196,6 +180,7 @@ class CreateGameHandler(webapp2.RequestHandler):
     else:
       self.redirect('/login')
 
+
 class GameHandler(webapp2.RequestHandler):
   def render(self, game, gid, game_data, user, error):
     template = jinja_env.get_template('game.html')
@@ -208,198 +193,135 @@ class GameHandler(webapp2.RequestHandler):
 
 
   def get(self, gid):
-    auth = self.request.cookies.get('auth', '')
-    try:
-      gid = int(gid) 
-    except (ValueError, TypeError):
-      self.redirect('/games')
-    if auth_util.check_cookie(auth):
-      uid = auth_util.get_uid(auth)
-      user = User.get_by_id(uid)
-      game = Game.get_by_id(gid)
+    uid, gid, user, game = auth_util.auth_into_game(self, gid, ['pregame', 'inplay'])
+    
+    # get game map
+    game_map = map_util.load_from_file(game.map_file)
 
-      # check if user actually belongs to this game
-      if not game or uid not in game.user_ids:
-        self.redirect('/games')
-      else:
-        # get game map
-        game_map = map_util.load_from_file(game.map_file)
+    # get game pieces
+    game_pieces = [pickle.loads(str(pickled)) for pickled in game.piece_list]
 
-        # get game pieces
-        game_pieces = [pickle.loads(str(pickled)) for pickled in game.piece_list]
+    # get image files for each cell
 
-        # get image files for each cell
+    # first non-piece images
+    cell_images = { }
+    for pos, val in game_map.data.items():
+      cell_images[pos] = 'cell%i.png' % val
 
-        # first non-piece images
-        cell_images = { }
-        for pos, val in game_map.data.items():
-          cell_images[pos] = 'cell%i.png' % val
+    # next piece images
+    for piece in game_pieces:
+      cell_images[piece.position] = piece.img_file
 
-        # next piece images
-        for piece in game_pieces:
-          cell_images[piece.position] = piece.img_file
+    # get game users (so we can do things like display their usernames)
+    game_users = [User.get_by_id(uid) for uid in game.user_ids]
 
-        # get game users (so we can do things like display their usernames)
-        game_users = [User.get_by_id(uid) for uid in game.user_ids]
+    # get whose turn it is
+    cur_turn = game.turn_num % len(game_pieces)
+    cur_uid = game_pieces[cur_turn].uid
 
-        # get whose turn it is
-        cur_turn = game.turn_num % len(game_pieces)
-        cur_uid = game_pieces[cur_turn].uid
+    cur_user = None
+    for game_user in game_users:
+      if game_user.key().id() == cur_uid:
+        cur_user = game_user
 
-        cur_user = None
-        for game_user in game_users:
-          if game_user.key().id() == cur_uid:
-            cur_user = game_user
+    # lump into dict
 
-        # lump into dict
+    game_data = {'game_map' : game_map,
+                 'game_users': game_users,
+                 'game_pieces': game_pieces,
+                 'cell_images': cell_images,
+                 'cur_user' : cur_user}
 
-        game_data = {'game_map' : game_map,
-                     'game_users': game_users,
-                     'game_pieces': game_pieces,
-                     'cell_images': cell_images,
-                     'cur_user' : cur_user}
+    # finally check if there were any errors
 
-        # finally check if there were any errors
-
-        if self.request.get('error') == 'y':
-          error = True
-        else:
-          error = False
-
-        # render page
-
-        self.render(game, gid, game_data, user, error)
+    if self.request.get('error') == 'y':
+      error = True
     else:
-      self.redirect('/login')
+      error = False
+
+    # render page
+
+    self.render(game, gid, game_data, user, error)
+
 
 class MoveHandler(webapp2.RequestHandler):
   def get(self, gid):
-    auth = self.request.cookies.get('auth', '')
-    gid = int(gid)
+    uid, gid, user, game = auth_util.auth_into_game(self, gid, ['inplay'])
+    
+    # get the direction
+    direction = self.request.get('d')
 
-    if auth_util.check_cookie(auth):
-      uid = auth_util.get_uid(auth)
-      user = User.get_by_id(uid)
-      game = Game.get_by_id(gid)
-
-      # check if user actually belongs to this game
-      # and whether the game has actually started
-      if not game or uid not in game.user_ids:
-        self.redirect('/games')
-      elif game.game_state != 'inplay':
-        # we don't want to let people move before the game starts
-        # or after it's over!
-        self.redirect('/games/game%i' % gid)
-      else:
-        # get the direction
-        direction = self.request.get('d')
-
-        vectors = {'left': (-1, 0), 'up': (0, -1), 'right': (1, 0), 'down': (0, 1)}
-        pos_diff = vectors[direction]
+    vectors = {'left': (-1, 0), 'up': (0, -1), 'right': (1, 0), 'down': (0, 1)}
+    pos_diff = vectors[direction]
 
 
-        # get the current piece
+    # get the current piece
 
-        cur_turn = game.turn_num % len(game.piece_list)
-        cur_piece = pickle.loads(str(game.piece_list[cur_turn]))
+    cur_turn = game.turn_num % len(game.piece_list)
+    cur_piece = pickle.loads(str(game.piece_list[cur_turn]))
 
-        # get the map
-        
-        game_map = map_util.load_from_file(game.map_file)
+    # get the map
+    
+    game_map = map_util.load_from_file(game.map_file)
 
-        # check if move is valid
+    # check if move is valid
 
-        if not game_map.valid_move(cur_piece.position, pos_diff):
-          self.redirect('../game%i?error=y'%gid)
-        else:
-          # perform move 
-
-          cur_piece.move(pos_diff[0], pos_diff[1])
-          game.piece_list[cur_turn] = pickle.dumps(cur_piece)
-
-          # increase the turn number by 1
-          game.turn_num += 1
-
-          game.put()
-          self.redirect('../game%i' % gid)
+    if not game_map.valid_move(cur_piece.position, pos_diff):
+      self.redirect('../game%i?error=y'%gid)
     else:
-      self.redirect('/login')
+      # perform move 
+
+      cur_piece.move(pos_diff[0], pos_diff[1])
+      game.piece_list[cur_turn] = pickle.dumps(cur_piece)
+
+      # increase the turn number by 1
+      game.turn_num += 1
+
+      game.put()
+      self.redirect('../game%i' % gid)
+
 
 class AddPlayerHandler(webapp2.RequestHandler):
   def post(self, gid):
-    auth = self.request.cookies.get('auth', '')
-    gid = int(gid)
+    uid, gid, user, game = auth_util.auth_into_game(self, gid, ['pregame'])
+    
+    username = self.request.get('username')
+    query = db.Query(User)
+    query.filter('name =', username)
+    new_user = query.get()
+    if new_user:
+      new_uid = new_user.key().id()
+      game.user_ids.append(new_uid)
 
-    if auth_util.check_cookie(auth):
-      uid = auth_util.get_uid(auth)
-      user = User.get_by_id(uid)
-      game = Game.get_by_id(gid)
+      # add a piece for this new user
+      new_piece = CharacterPiece(pos_x = 6, 
+                                  pos_y = 5, 
+                                  img_file = 'piece.png', 
+                                  uid = new_uid)
+      game.piece_list.append(pickle.dumps(new_piece))
 
-      # check if user actually belongs to this game
-      # and whether the game has actually started
-      if not game or uid not in game.user_ids:
-        self.redirect('/games')
-      elif game.game_state != 'pregame':
-        # we don't want to let people add people if it's not
-        # pregame!
-        self.redirect('/games/game%i' % gid)
-      else:
-        username = self.request.get('username')
-        query = db.Query(User)
-        query.filter('name =', username)
-        new_user = query.get()
-        if new_user:
-          new_uid = new_user.key().id()
-          game.user_ids.append(new_uid)
+      # update the game
+      game.put()
 
-          # add a piece for this new user
-          new_piece = CharacterPiece(pos_x = 6, 
-                                      pos_y = 5, 
-                                      img_file = 'piece.png', 
-                                      uid = new_uid)
-          game.piece_list.append(pickle.dumps(new_piece))
+      # now update the user
+      new_user.game_ids.append(gid)
+      new_user.put()
 
-          # update the game
-          game.put()
-
-          # now update the user
-          new_user.game_ids.append(gid)
-          new_user.put()
-
-          # redirect back to the main page
-          self.redirect('../game%i' % gid)
-        else:
-          # this user doesn't exist
-          # TODO: send an error message back
-          self.redirect('../game%i?error=y' % gid)
+      # redirect back to the main page
+      self.redirect('../game%i' % gid)
     else:
-      self.redirect('/login')
+      # this user doesn't exist
+      # TODO: send an error message back
+      self.redirect('../game%i?error=y' % gid)
 
 class StartGameHandler(webapp2.RequestHandler):
   def post(self, gid):
-    auth = self.request.cookies.get('auth', '')
-    gid = int(gid)
+    uid, gid, user, game = auth_util.auth_into_game(self, gid, ['pregame'])
+    
+    game.game_state = 'inplay'
+    game.put()
 
-    if auth_util.check_cookie(auth):
-      uid = auth_util.get_uid(auth)
-      user = User.get_by_id(uid)
-      game = Game.get_by_id(gid)
-
-      # check if user actually belongs to this game
-      # and whether the game has actually started
-      if not game or uid not in game.user_ids:
-        self.redirect('/games')
-      elif game.game_state != 'pregame':
-        # it doesn't make sense to start the game
-        # if we are not in pregame
-        self.redirect('/games/game%i' % gid)
-      else:
-        game.game_state = 'inplay'
-        game.put()
-
-        self.redirect('/games/game%i' % gid)
-    else:
-      self.redirect('/login')
+    self.redirect('/games/game%i' % gid)
 
 app = webapp2.WSGIApplication([('/', MainHandler), 
                                ('(.*)/', TrailingHandler),
