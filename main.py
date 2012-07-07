@@ -282,16 +282,26 @@ class MoveHandler(webapp2.RequestHandler):
 
         cur_turn = game.turn_num % len(game.piece_list)
         cur_piece = pickle.loads(str(game.piece_list[cur_turn]))
-        cur_piece.move(pos_diff[0], pos_diff[1])
-        game.piece_list[cur_turn] = pickle.dumps(cur_piece)
 
+        # get the map
+        
+        game_map = map_util.load_from_file(game.map_file)
 
+        # check if move is valid
 
-        # increase the turn number by 1
-        game.turn_num += 1
+        if not game_map.valid_move(cur_piece.position, pos_diff):
+          self.redirect('../game%i?e=1'%gid)
+        else:
+          # perform move 
 
-        game.put()
-        self.redirect('../game%i'%gid)
+          cur_piece.move(pos_diff[0], pos_diff[1])
+          game.piece_list[cur_turn] = pickle.dumps(cur_piece)
+
+          # increase the turn number by 1
+          game.turn_num += 1
+
+          game.put()
+          self.redirect('../game%i'%gid)
     else:
       self.redirect('/login')
 

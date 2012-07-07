@@ -20,6 +20,15 @@ class Map(object):
   def set_cell(self, x, y, cell_val):
     self.data[(x,y)] = cell_val
 
+  def valid_move(self, start_pos, direction):
+    dir_map = {(0,-1): 1, (1, 0): 2, (0, 1): 4, (-1, 0): 8}
+    dir_bit = dir_map[direction]
+    if (dir_bit & self.data[start_pos]):
+      return False
+    else:
+      return True
+
+
 # load map from file
 def load_from_file(fname):
   with open('maps/%s' % fname) as f:
