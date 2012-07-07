@@ -209,12 +209,14 @@ class StartGameHandler(webapp2.RequestHandler):
       self.redirect('/login')
 
 class GameHandler(webapp2.RequestHandler):
-  def render(self, game, gid, game_data):
+  def render(self, game, gid, game_data, error):
     template = jinja_env.get_template('game.html')
     html = template.render(game = game, 
                            gid = gid, 
-                           game_data = game_data)
+                           game_data = game_data,
+                           error = error)
     self.response.out.write(html)
+
 
   def get(self, gid):
     auth = self.request.cookies.get('auth', '')
@@ -253,7 +255,17 @@ class GameHandler(webapp2.RequestHandler):
         game_data = {'game_map' : game_map,
                     'game_pieces': game_pieces,
                     'cell_images': cell_images}
-        self.render(game, gid, game_data)
+
+        # finally check if there were any errors
+
+        if self.request.get('error') == 'y':
+          error = True
+        else:
+          error = False
+
+        # render page
+
+        self.render(game, gid, game_data, error)
     else:
       self.redirect('/login')
 
@@ -290,7 +302,7 @@ class MoveHandler(webapp2.RequestHandler):
         # check if move is valid
 
         if not game_map.valid_move(cur_piece.position, pos_diff):
-          self.redirect('../game%i?e=1'%gid)
+          self.redirect('../game%i?error=y'%gid)
         else:
           # perform move 
 

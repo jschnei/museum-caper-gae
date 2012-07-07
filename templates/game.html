@@ -37,6 +37,11 @@
         <li> <a href = 'game{{gid}}/move?d=down'> Move down </a> </li>
       </ul>
     </div>
+    {% if error %}
+    <div id = 'error' style = "color:red">
+      <p> That move is invalid </p>
+    </div>
+    {% endif %}
     <div id = 'render_board'>
       <table cellspacing="0" cellpadding="0" >
         {%- for y in range(game_data.game_map.height) -%}
