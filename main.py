@@ -197,11 +197,12 @@ class CreateGameHandler(webapp2.RequestHandler):
       self.redirect('/login')
 
 class GameHandler(webapp2.RequestHandler):
-  def render(self, game, gid, game_data, error):
+  def render(self, game, gid, game_data, user, error):
     template = jinja_env.get_template('game.html')
     html = template.render(game = game, 
                            gid = gid, 
                            game_data = game_data,
+                           user = user,
                            error = error)
     self.response.out.write(html)
 
@@ -209,7 +210,7 @@ class GameHandler(webapp2.RequestHandler):
   def get(self, gid):
     auth = self.request.cookies.get('auth', '')
     try:
-      gid = int(gid)
+      gid = int(gid) 
     except (ValueError, TypeError):
       self.redirect('/games')
     if auth_util.check_cookie(auth):
@@ -241,12 +242,22 @@ class GameHandler(webapp2.RequestHandler):
         # get game users (so we can do things like display their usernames)
         game_users = [User.get_by_id(uid) for uid in game.user_ids]
 
+        # get whose turn it is
+        cur_turn = game.turn_num % len(game_pieces)
+        cur_uid = game_pieces[cur_turn].uid
+
+        cur_user = None
+        for game_user in game_users:
+          if game_user.key().id() == cur_uid:
+            cur_user = game_user
+
         # lump into dict
 
         game_data = {'game_map' : game_map,
                      'game_users': game_users,
                      'game_pieces': game_pieces,
-                     'cell_images': cell_images}
+                     'cell_images': cell_images,
+                     'cur_user' : cur_user}
 
         # finally check if there were any errors
 
@@ -257,7 +268,7 @@ class GameHandler(webapp2.RequestHandler):
 
         # render page
 
-        self.render(game, gid, game_data, error)
+        self.render(game, gid, game_data, user, error)
     else:
       self.redirect('/login')
 
@@ -345,7 +356,7 @@ class AddPlayerHandler(webapp2.RequestHandler):
           new_piece = CharacterPiece(pos_x = 6, 
                                       pos_y = 5, 
                                       img_file = 'piece.png', 
-                                      uid = uid)
+                                      uid = new_uid)
           game.piece_list.append(pickle.dumps(new_piece))
 
           # update the game
@@ -385,7 +396,7 @@ class StartGameHandler(webapp2.RequestHandler):
       else:
         game.game_state = 'inplay'
         game.put()
-        
+
         self.redirect('/games/game%i' % gid)
     else:
       self.redirect('/login')
