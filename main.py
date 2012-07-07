@@ -61,7 +61,7 @@ class Game(db.Model):
   user_ids = db.ListProperty(int)
   
   turn_num = db.IntegerProperty(required = True, default = 0)
-  map_file = db.StringProperty(default = 'basic_map.map')
+  map_file = db.StringProperty(default = 'default_map.map')
   piece_list = db.ListProperty(str)
 
   created = db.DateTimeProperty(auto_now_add = True)
@@ -192,10 +192,10 @@ class StartGameHandler(webapp2.RequestHandler):
       user = User.get_by_id(uid)
 
       # create a new game
-      user_piece = CharacterPiece(pos_x = 10, pos_y = 10, img_file = 'piece.png', uid = uid)
+      user_piece = CharacterPiece(pos_x = 6, pos_y = 5, img_file = 'piece.png', uid = uid)
       game = Game(user_ids = [uid], 
                   turn_num = 0, 
-                  map_file = 'basic_map.map', 
+                  map_file = 'default_map.map', 
                   piece_list = [pickle.dumps(user_piece)])
       game.put()
       gid = game.key().id()
