@@ -68,18 +68,6 @@ def auth_into_site(handler):
 
 # methods for dealing with cookies
 
-"""
-# authenticates cookie cookie and returns the corresponding
-# user
-def authenticate(handler):
-  # first check if the cookie is valid
-  auth = self.request.cookies.get('auth', '')
-  if check_cookie(auth):
-    # then check if the user actually exists
-    uid = get_uid(cookie)
-    return User.get_by_id(uid) 
-"""
-
 def hash_str(s):
   return hashlib.md5(s+SECRET).hexdigest()
 

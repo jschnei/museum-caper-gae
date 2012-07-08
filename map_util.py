@@ -1,18 +1,13 @@
+# Map class for storing the static map
 class Map(object):
   def __init__(self, width, height):
     self.width = width
     self.height = height
 
-    # we'll store the map as a dict where 
+    # the static map is stored as a dict where 
     # data[(x, y)] is the map cell at coordinates
-    # (x, y). not super efficient, but if we really 
-    # need super efficiency, we can look into numpy's
-    # multi-dimensional arrays (I'm not convinced
-    # that lists of lists in python are any better and 
-    # they're more annoying to initialize) 
-
-    # also, since our maps are probably pretty wall-sparse,
-    # this might be better anyway (not that it matters)
+    # (x, y)
+	
     self.data = dict([((x, y), 0) for x in xrange(self.width) 
                                   for y in xrange(self.height)])
 
