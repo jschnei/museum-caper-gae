@@ -23,5 +23,9 @@ pip-log.txt
 #Translations
 *.mo
 
-#Mr Developer
+# Mr Developer
 .mr.developer.cfg
+
+# Programmer's Notepad Temp Files
+*.pnproj
+*.pnps
