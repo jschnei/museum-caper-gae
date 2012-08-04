@@ -33,14 +33,12 @@
 {% endif %}
 <div id = 'render_board'>
   <table cellspacing="0" cellpadding="0" >
-    {%- for y in range(game_data.game_map.static.height) -%}
+    {%- for y in range(game_data.game_map.height) -%}
       <tr>
-        {%- for x in range(game_data.game_map.static.width) -%}
+        {%- for x in range(game_data.game_map.width) -%}
           <td><img src="../images/{{game_data.cell_images[(x, y)]}}" width="50" height="50" /></td>
         {%- endfor -%}
       </tr>
     {%- endfor -%}
   </table>
 </div>
-
-

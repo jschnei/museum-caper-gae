@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python
 
 from google.appengine.ext import db
@@ -9,7 +8,7 @@ import pickle
 import webapp2
 
 from models import *
-from game_util import Piece, CharacterPiece, PaintingPiece, LockPiece
+from game_util import Piece, Character, Painting, Lock
 
 import auth_util
 import map_util
@@ -160,15 +159,15 @@ class CreateGameHandler(webapp2.RequestHandler):
       user = User.get_by_id(uid)
 
       # create a new game
-      user_piece = CharacterPiece(pos_x = 6, 
-                                  pos_y = 5, 
-                                  img_file = 'piece.png', 
-                                  uid = uid)
+      user_piece = Character(pos_x = 6, 
+                             pos_y = 5, 
+                             img_file = 'piece.png', 
+                             uid = uid)
       game = Game(user_ids = [uid], 
                   turn_num = 0, 
                   game_state = 'pregame',
                   map_file = 'default_map.map', 
-                  piece_list = [pickle.dumps(user_piece)])
+                  character_list = [pickle.dumps(user_piece)])
       game.put()
       gid = game.key().id()
 
@@ -193,36 +192,16 @@ class GameHandler(webapp2.RequestHandler):
 
 
   def get(self, gid):
-    uid, gid, user, game = auth_util.auth_into_game(self, gid, ['pregame', 'inplay'])
+    uid, gid, user, game = auth_util.auth_into_game(self, gid, 
+                                                          ['pregame',
+                                                           'init', 
+                                                           'inplay'])
     
-    # get game map
-    game_map = map_util.load_from_file(game.map_file)
-
-    # get game pieces
-    game_pieces = [pickle.loads(str(pickled)) for pickled in game.piece_list]
-
-    # get image files for each cell
-
-    # first non-piece images
-    cell_images = { }
-    for pos, val in game_map.data.items():
-      cell_images[pos] = 'cell%i.png' % val
-
-    # next piece images
-    for piece in game_pieces:
-      cell_images[piece.position] = piece.img_file
-
-    # get game users (so we can do things like display their usernames)
-    game_users = [User.get_by_id(uid) for uid in game.user_ids]
-
-    # get whose turn it is
-    cur_turn = game.turn_num % len(game_pieces)
-    cur_uid = game_pieces[cur_turn].uid
-
-    cur_user = None
-    for game_user in game_users:
-      if game_user.key().id() == cur_uid:
-        cur_user = game_user
+    game_map = game.load_map()
+    game_users = game.load_users()
+    game_pieces = game.load_pieces()
+    cell_images = game_map.get_cell_images()
+    cur_user = game.load_cur_user()
 
     # lump into dict
 
@@ -254,29 +233,10 @@ class MoveHandler(webapp2.RequestHandler):
     vectors = {'left': (-1, 0), 'up': (0, -1), 'right': (1, 0), 'down': (0, 1)}
     pos_diff = vectors[direction]
 
-
-    # get the current piece
-
-    cur_turn = game.turn_num % len(game.piece_list)
-    cur_piece = pickle.loads(str(game.piece_list[cur_turn]))
-
-    # get the map
-    
-    game_map = map_util.load_from_file(game.map_file)
-
-    # check if move is valid
-
-    if not game_map.valid_move(cur_piece.position, pos_diff):
+    # make move
+    if not game.make_move(pos_diff):
       self.redirect('../game%i?error=y'%gid)
     else:
-      # perform move 
-
-      cur_piece.move(pos_diff[0], pos_diff[1])
-      game.piece_list[cur_turn] = pickle.dumps(cur_piece)
-
-      # increase the turn number by 1
-      game.turn_num += 1
-
       game.put()
       self.redirect('../game%i' % gid)
 
@@ -289,22 +249,14 @@ class AddPlayerHandler(webapp2.RequestHandler):
     query = db.Query(User)
     query.filter('name =', username)
     new_user = query.get()
+
     if new_user:
-      new_uid = new_user.key().id()
-      game.user_ids.append(new_uid)
-
-      # add a piece for this new user
-      new_piece = CharacterPiece(pos_x = 6, 
-                                  pos_y = 5, 
-                                  img_file = 'piece.png', 
-                                  uid = new_uid)
-      game.piece_list.append(pickle.dumps(new_piece))
-
-      # update the game
+      # add user and update the game
+      game.add_new_user(new_user.key().id())
       game.put()
 
       # now update the user
-      new_user.game_ids.append(gid)
+      new_user.add_game_id(gid)
       new_user.put()
 
       # redirect back to the main page

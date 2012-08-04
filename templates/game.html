@@ -17,6 +17,8 @@
   	</div>
     {% if game.game_state == 'pregame' %}
       {% include 'pregame.html' %}
+    {% elif game.game_state == 'init' %}
+      {% include 'gameinit.html' %}
     {% elif game.game_state == 'inplay' %} 
       {% include 'inplay.html' %}  
     {% endif %}

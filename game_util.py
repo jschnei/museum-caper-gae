@@ -13,18 +13,18 @@ class Piece(object):
     self.position = (x, y)
 
 
-class CharacterPiece(Piece):
+class Character(Piece):
   def __init__(self, pos_x, pos_y, img_file, uid):
-    super(CharacterPiece, self).__init__(pos_x, pos_y, img_file)
+    super(Character, self).__init__(pos_x, pos_y, img_file)
     self.uid = uid
 
 
-class PaintingPiece(Piece):
+class Painting(Piece):
   def __init__(self):
     # insert later
     return
 
-class LockPiece(Piece):
+class Lock(Piece):
   def __init__(self):
     # insert later
     return
