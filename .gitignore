@@ -26,6 +26,7 @@ pip-log.txt
 # Mr Developer
 .mr.developer.cfg
 
-# Programmer's Notepad Temp Files
+# Temp Files
 *.pnproj
 *.pnps
+*.komodoproject
