@@ -159,15 +159,11 @@ class CreateGameHandler(webapp2.RequestHandler):
       user = User.get_by_id(uid)
 
       # create a new game
-      user_piece = Character(pos_x = 6, 
-                             pos_y = 5, 
-                             img_file = 'piece.png', 
-                             uid = uid)
       game = Game(user_ids = [uid], 
                   turn_num = 0, 
                   game_state = 'pregame',
                   map_file = 'default_map.map', 
-                  character_list = [pickle.dumps(user_piece)])
+                  character_list = [])
       game.put()
       gid = game.key().id()
 
@@ -197,19 +193,21 @@ class GameHandler(webapp2.RequestHandler):
                                                            'init', 
                                                            'inplay'])
     
+    
     game_map = game.load_map()
     game_users = game.load_users()
     game_pieces = game.load_pieces()
     cell_images = game_map.get_cell_images()
     cur_user = game.load_cur_user()
-
+    has_placed = game.has_placed(uid)
     # lump into dict
 
     game_data = {'game_map' : game_map,
                  'game_users': game_users,
                  'game_pieces': game_pieces,
                  'cell_images': cell_images,
-                 'cur_user' : cur_user}
+                 'cur_user' : cur_user,
+                 'has_placed': has_placed}
 
     # finally check if there were any errors
 
@@ -266,11 +264,32 @@ class AddPlayerHandler(webapp2.RequestHandler):
       # TODO: send an error message back
       self.redirect('../game%i?error=y' % gid)
 
+class PlacePlayerHandler(webapp2.RequestHandler):
+  def get(self, gid):
+    uid, gid, user, game = auth_util.auth_into_game(self, gid, ['init'])
+
+    if not game.load_piece_by_uid(uid):
+      place_x = int(self.request.get('x'))
+      place_y = int(self.request.get('y'))
+      place_pos = (place_x, place_y)
+      if game.load_map().valid_placement((place_x, place_y)):
+        game.add_character(Character(place_x, place_y, 'piece.png', uid))
+        
+        if game.ready_to_play():
+          game.game_state = 'inplay'
+        
+        game.put()
+        self.redirect('../game%i' % gid)
+
+    self.redirect('../game%i?error=y' % gid)
+
+
+
 class StartGameHandler(webapp2.RequestHandler):
   def post(self, gid):
     uid, gid, user, game = auth_util.auth_into_game(self, gid, ['pregame'])
     
-    game.game_state = 'inplay'
+    game.game_state = 'init'
     game.put()
 
     self.redirect('/games/game%i' % gid)
@@ -283,8 +302,9 @@ app = webapp2.WSGIApplication([('/', MainHandler),
                                ('/games', ViewGamesHandler),
                                ('/creategame', CreateGameHandler),
                                ('/games/game(\d+)', GameHandler),
-                               ('/games/game(\d+)/move', MoveHandler),
                                ('/games/game(\d+)/addplayer', AddPlayerHandler),
+                               ('/games/game(\d+)/move', MoveHandler),
+                               ('/games/game(\d+)/placeplayer', PlacePlayerHandler),
                                ('/games/game(\d+)/startgame', StartGameHandler)
                                ],
                               debug=True)

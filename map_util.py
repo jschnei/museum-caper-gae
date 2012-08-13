@@ -48,6 +48,10 @@ class Map(object):
   def valid_move(self, piece, direction):
     return (self.static.valid_move(piece.position, direction) and
             self.dynamic.valid_move(piece, direction))
+  
+  def valid_placement(self, position):
+    return (self.static.valid_placement(position) and
+            self.dynamic.valid_placement(position))
 
 
 
@@ -77,6 +81,11 @@ class StaticMap(object):
       return False
     else:
       return True
+    
+  def valid_placement(self, pos):
+    # 15 represents a filled square, so
+    # we just check that it's not 15.
+    return (self.data[pos] != 15)
 
 
 # DynamicMap class for storing map information about pieces that
@@ -92,8 +101,16 @@ class DynamicMap(object):
     self.data[(x,y)] = piece
 
   def valid_move(self, piece, direction):
-    # TODO: INSERT!
-    return True
+    new_pos = (piece.position[0] + direction[0],
+               piece.position[1] + direction[1])
+    # TODO: make more accurate (i.e. thieves can move onto locks and
+    # paintings, etc.)
+    return self.valid_placement(new_pos)
+  
+  def valid_placement(self, pos):
+    return (pos not in self.data)
+    
+  
 
 
 
