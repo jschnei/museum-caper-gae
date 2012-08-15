@@ -57,7 +57,7 @@ class Map(object):
 
 # StaticMap class for storing the static map
 class StaticMap(object):
-  CELL_IMG = 'cell%i.png'
+  CELL_IMG = 'cells/cell%i.png'
 
   def __init__(self, width, height):
     self.width = width
