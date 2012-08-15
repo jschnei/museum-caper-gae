@@ -1,8 +1,12 @@
 # models
 from google.appengine.ext import db
+
 import pickle
+import random
 
 from game_util import Character
+
+import game_util
 import map_util
 
 
@@ -127,7 +131,13 @@ class Game(db.Model):
 
       return True
 
+
+  def random_color(self):
+    # TODO: Allow players to select their colors!
+    used_colors = {char.color for char in self.load_pieces()}
+    return random.sample(game_util.VALID_COLORS - used_colors, 1)[0]
   
+
   def ready_to_play(self):
     return (len(self.user_ids) == len(self.character_list))
 

@@ -13,9 +13,23 @@ class Piece(object):
     self.position = (x, y)
 
 
+VALID_COLORS = set(['blue',
+                    'brown',
+                    'green',
+                    'purple',
+                    'red',
+                    'yellow'])
+
+def piece_file(color):
+  if color in VALID_COLORS:
+    return 'pieces/{}.png'.format(color)
+  else:
+    raise Exception('Invalid color!')
+
 class Character(Piece):
-  def __init__(self, pos_x, pos_y, img_file, uid):
-    super(Character, self).__init__(pos_x, pos_y, img_file)
+  def __init__(self, pos_x, pos_y, color, uid):
+    super(Character, self).__init__(pos_x, pos_y, piece_file(color))
+    self.color = color
     self.uid = uid
 
 

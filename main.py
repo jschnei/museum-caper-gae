@@ -273,7 +273,11 @@ class PlacePlayerHandler(webapp2.RequestHandler):
       place_y = int(self.request.get('y'))
       place_pos = (place_x, place_y)
       if game.load_map().valid_placement((place_x, place_y)):
-        game.add_character(Character(place_x, place_y, 'piece.png', uid))
+        new_character = Character(place_x,
+                                  place_y,
+                                  game.random_color(),
+                                  uid)
+        game.add_character(new_character)
         
         if game.ready_to_play():
           game.game_state = 'inplay'
